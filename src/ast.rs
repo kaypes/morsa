@@ -9,7 +9,9 @@ pub enum Expr {
     Div(Box<Expr>, Box<Expr>),
     Eq(Box<Expr>, Box<Expr>),
     Less(Box<Expr>, Box<Expr>),
-    Greater(Box<Expr>, Box<Expr>)
+    Greater(Box<Expr>, Box<Expr>),
+    And(Box<Expr>, Box<Expr>),
+    Or(Box<Expr>, Box<Expr>),
 }
 
 #[derive(Debug, Clone)]

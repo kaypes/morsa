@@ -19,6 +19,7 @@ pub fn parser_da_morsa<'a>() -> impl Parser<'a, &'a [Token], Vec<Stmt>, Extra<'a
         .collect::<Vec<i32>>()
         .map(|digits: Vec<i32>| digits.iter().fold(0i32, |acc, d| acc * 10 + d));
 
+
     let expr = recursive(|expr| {
         let val = num.map(Expr::Int).or(ident
             .clone()
@@ -62,13 +63,17 @@ pub fn parser_da_morsa<'a>() -> impl Parser<'a, &'a [Token], Vec<Stmt>, Extra<'a
                     _ => Expr::Sub(Box::new(acc), Box::new(next)),
                 })
             });
-
-        math.clone()
-            .then(
-                choice((
-                    just(Token::Eq).to(1), 
-                    just(Token::Less).to(2),
-                    just(Token::Greater).to(3)),
+            
+            math
+                .clone()
+                .then(
+                    choice((
+                        just(Token::Eq).to(1), 
+                        just(Token::Less).to(2),
+                        just(Token::Greater).to(3),
+                        just(Token::And).to(4),
+                        just(Token::Or).to(5),
+                    ),
                 )
                     .then(math)
                     .or_not(),
@@ -77,6 +82,8 @@ pub fn parser_da_morsa<'a>() -> impl Parser<'a, &'a [Token], Vec<Stmt>, Extra<'a
                 Some((1, b)) => Expr::Eq(Box::new(a), Box::new(b)),
                 Some((2, b)) => Expr::Less(Box::new(a), Box::new(b)),
                 Some((3, b)) => Expr::Greater(Box::new(a), Box::new(b)),
+                Some((4, b)) => Expr::And(Box::new(a), Box::new(b)),
+                Some((5, b)) => Expr::Or(Box::new(a), Box::new(b)),
                 _ => a,
             })
     });

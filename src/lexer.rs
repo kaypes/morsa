@@ -22,7 +22,9 @@ pub enum Token {
     #[token("--. . -")]                 Get,
     #[token("-.--.")]                   LBracket,
     #[token("-.--.-")]                  RBracket,
-
+    #[token(".- -. -..")]               And,
+    #[token("--- .-.")]                 Or,
+    
     #[regex(r"[\.-]+", |lex| lex.slice().to_string())]
     Morse(String),
 }
