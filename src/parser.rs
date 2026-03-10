@@ -1,17 +1,16 @@
-use chumsky::prelude::*;
-use crate::lexer::Token;
 use crate::ast::{Expr, Stmt};
+use crate::lexer::Token;
+use chumsky::prelude::*;
 
 type Extra<'a> = extra::Err<Rich<'a, Token>>;
 
 pub fn parser_da_morsa<'a>() -> impl Parser<'a, &'a [Token], Vec<Stmt>, Extra<'a>> {
-    
-    let ident = select! { 
-        Token::Morse(s) if Token::Morse(s.clone()).to_digit().is_none() => s 
+    let ident = select! {
+        Token::Morse(s) if Token::Morse(s.clone()).to_digit().is_none() => s
     };
-    
-    let digit = select! { 
-        t @ Token::Morse(_) if t.to_digit().is_some() => t.to_digit().unwrap() 
+
+    let digit = select! {
+        t @ Token::Morse(_) if t.to_digit().is_some() => t.to_digit().unwrap()
     };
 
     let num = digit
@@ -22,9 +21,14 @@ pub fn parser_da_morsa<'a>() -> impl Parser<'a, &'a [Token], Vec<Stmt>, Extra<'a
 
     let val = num.map(Expr::Int).or(ident.clone().map(Expr::Identifier));
 
-    let term = val.clone()
-        .then(choice((just(Token::Star).to(1), just(Token::Slash).to(2)))
-            .then(val.clone()).repeated().collect::<Vec<_>>())
+    let term = val
+        .clone()
+        .then(
+            choice((just(Token::Star).to(1), just(Token::Slash).to(2)))
+                .then(val.clone())
+                .repeated()
+                .collect::<Vec<_>>(),
+        )
         .map(|(a, b)| {
             b.into_iter().fold(a, |acc, (op, next)| match op {
                 1 => Expr::Mul(Box::new(acc), Box::new(next)),
@@ -32,9 +36,14 @@ pub fn parser_da_morsa<'a>() -> impl Parser<'a, &'a [Token], Vec<Stmt>, Extra<'a
             })
         });
 
-    let math = term.clone()
-        .then(choice((just(Token::Plus).to(1), just(Token::Minus).to(2)))
-            .then(term.clone()).repeated().collect::<Vec<_>>())
+    let math = term
+        .clone()
+        .then(
+            choice((just(Token::Plus).to(1), just(Token::Minus).to(2)))
+                .then(term.clone())
+                .repeated()
+                .collect::<Vec<_>>(),
+        )
         .map(|(a, b)| {
             b.into_iter().fold(a, |acc, (op, next)| match op {
                 1 => Expr::Add(Box::new(acc), Box::new(next)),
@@ -42,11 +51,14 @@ pub fn parser_da_morsa<'a>() -> impl Parser<'a, &'a [Token], Vec<Stmt>, Extra<'a
             })
         });
 
-    let expr = math.clone()
+    let expr = math
+        .clone()
         .then(
-            just(Token::Eq).to(1).or(just(Token::Less).to(2))
-            .then(math)
-            .or_not()
+            just(Token::Eq)
+                .to(1)
+                .or(just(Token::Less).to(2))
+                .then(math)
+                .or_not(),
         )
         .map(|(a, b)| match b {
             Some((1, b)) => Expr::Eq(Box::new(a), Box::new(b)),
@@ -55,23 +67,27 @@ pub fn parser_da_morsa<'a>() -> impl Parser<'a, &'a [Token], Vec<Stmt>, Extra<'a
         });
 
     recursive(|stmt| {
-        let decl = just(Token::Const).or_not()
+        let decl = just(Token::Const)
+            .or_not()
             .then_ignore(just(Token::IntType))
             .then(ident.clone())
             .then_ignore(just(Token::Assign))
             .then(expr.clone())
-            .map(|((is_const, name), value)| Stmt::Declaration { 
-                name, 
+            .map(|((is_const, name), value)| Stmt::Declaration {
+                name,
                 is_mutable: is_const.is_none(),
-                value 
+                value,
             });
 
-        let assign = ident.clone()
+        let assign = ident
+            .clone()
             .then_ignore(just(Token::Assign))
             .then(expr.clone())
             .map(|(name, value)| Stmt::Assignment { name, value });
 
-        let print = just(Token::Print).ignore_then(expr.clone()).map(Stmt::Print);
+        let print = just(Token::Print)
+            .ignore_then(expr.clone())
+            .map(Stmt::Print);
         let brk = just(Token::Break).to(Stmt::Break);
 
         let repeat = just(Token::Repeat)
@@ -82,9 +98,17 @@ pub fn parser_da_morsa<'a>() -> impl Parser<'a, &'a [Token], Vec<Stmt>, Extra<'a
         let if_stmt = just(Token::If)
             .ignore_then(expr.clone())
             .then(stmt.clone().repeated().collect::<Vec<Stmt>>())
-            .then(just(Token::Else).ignore_then(stmt.clone().repeated().collect()).or_not())
+            .then(
+                just(Token::Else)
+                    .ignore_then(stmt.clone().repeated().collect())
+                    .or_not(),
+            )
             .then_ignore(just(Token::End))
-            .map(|((condition, then_body), else_body)| Stmt::If { condition, then_body, else_body });
+            .map(|((condition, then_body), else_body)| Stmt::If {
+                condition,
+                then_body,
+                else_body,
+            });
 
         decl.or(assign).or(print).or(repeat).or(if_stmt).or(brk)
     })
