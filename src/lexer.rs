@@ -18,6 +18,7 @@ pub enum Token {
     #[token("-... .-. . .- -.-")]       Break,
     #[token("-...- -...-")]             Eq,
     #[token(".-.. -")]                  Less,
+    #[token("--. -")]                   Greater,
     #[token("--. . -")]                 Get,
     #[token("-.--.")]                   LBracket,
     #[token("-.--.-")]                  RBracket,

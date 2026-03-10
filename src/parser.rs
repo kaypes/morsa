@@ -65,13 +65,18 @@ pub fn parser_da_morsa<'a>() -> impl Parser<'a, &'a [Token], Vec<Stmt>, Extra<'a
 
         math.clone()
             .then(
-                choice((just(Token::Eq).to(1), just(Token::Less).to(2)))
+                choice((
+                    just(Token::Eq).to(1), 
+                    just(Token::Less).to(2),
+                    just(Token::Greater).to(3)),
+                )
                     .then(math)
                     .or_not(),
             )
             .map(|(a, b)| match b {
                 Some((1, b)) => Expr::Eq(Box::new(a), Box::new(b)),
                 Some((2, b)) => Expr::Less(Box::new(a), Box::new(b)),
+                Some((3, b)) => Expr::Greater(Box::new(a), Box::new(b)),
                 _ => a,
             })
     });

@@ -55,6 +55,7 @@ impl Environment {
             }
             Expr::Eq(a, b) => Ok(if self.eval(a)? == self.eval(b)? { 1 } else { 0 }),
             Expr::Less(a, b) => Ok(if self.eval(a)? < self.eval(b)? { 1 } else { 0 }),
+            Expr::Greater(a, b) => Ok(if self.eval(a)? > self.eval(b)? { 1 } else { 0 }),
         }
     }
 
