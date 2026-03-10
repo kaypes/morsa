@@ -12,6 +12,8 @@ pub enum Expr {
     Greater(Box<Expr>, Box<Expr>),
     And(Box<Expr>, Box<Expr>),
     Or(Box<Expr>, Box<Expr>),
+    LessEq(Box<Expr>, Box<Expr>),
+    GreaterEq(Box<Expr>, Box<Expr>),
 }
 
 #[derive(Debug, Clone)]

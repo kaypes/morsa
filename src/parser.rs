@@ -73,6 +73,8 @@ pub fn parser_da_morsa<'a>() -> impl Parser<'a, &'a [Token], Vec<Stmt>, Extra<'a
                         just(Token::Greater).to(3),
                         just(Token::And).to(4),
                         just(Token::Or).to(5),
+                        just(Token::LessEq).to(6),
+                        just(Token::GreaterEq).to(7),
                     ),
                 )
                     .then(math)
@@ -84,6 +86,8 @@ pub fn parser_da_morsa<'a>() -> impl Parser<'a, &'a [Token], Vec<Stmt>, Extra<'a
                 Some((3, b)) => Expr::Greater(Box::new(a), Box::new(b)),
                 Some((4, b)) => Expr::And(Box::new(a), Box::new(b)),
                 Some((5, b)) => Expr::Or(Box::new(a), Box::new(b)),
+                Some((6, b)) => Expr::LessEq(Box::new(a), Box::new(b)),
+                Some((7, b)) => Expr::GreaterEq(Box::new(a), Box::new(b)),
                 _ => a,
             })
     });
