@@ -3,6 +3,9 @@ pub enum Expr {
     Int(i32),
     Identifier(String),
     Add(Box<Expr>, Box<Expr>),
+    Sub(Box<Expr>, Box<Expr>),
+    Mul(Box<Expr>, Box<Expr>),
+    Div(Box<Expr>, Box<Expr>),
     Eq(Box<Expr>, Box<Expr>),
     Less(Box<Expr>, Box<Expr>),
 }

@@ -14,27 +14,38 @@ pub fn parser_da_morsa<'a>() -> impl Parser<'a, &'a [Token], Vec<Stmt>, Extra<'a
         t @ Token::Morse(_) if t.to_digit().is_some() => t.to_digit().unwrap() 
     };
 
-    // Número: Combina dígitos (ex: 9 9 9 -> 999)
     let num = digit
         .repeated()
         .at_least(1)
-        .collect::<Vec<i32>>() // Forçamos o tipo da coleção
+        .collect::<Vec<i32>>()
         .map(|digits: Vec<i32>| digits.iter().fold(0i32, |acc, d| acc * 10 + d));
 
     let val = num.map(Expr::Int).or(ident.clone().map(Expr::Identifier));
 
-    // Expressões: Soma, Igualdade e Menor Que
-    let add = val.clone()
-        .then(just(Token::Plus).ignore_then(val).or_not())
-        .map(|(a, b)| match b {
-            Some(b) => Expr::Add(Box::new(a), Box::new(b)),
-            None => a,
+    let term = val.clone()
+        .then(choice((just(Token::Star).to(1), just(Token::Slash).to(2)))
+            .then(val.clone()).repeated().collect::<Vec<_>>())
+        .map(|(a, b)| {
+            b.into_iter().fold(a, |acc, (op, next)| match op {
+                1 => Expr::Mul(Box::new(acc), Box::new(next)),
+                _ => Expr::Div(Box::new(acc), Box::new(next)),
+            })
         });
 
-    let expr = add.clone()
+    let math = term.clone()
+        .then(choice((just(Token::Plus).to(1), just(Token::Minus).to(2)))
+            .then(term.clone()).repeated().collect::<Vec<_>>())
+        .map(|(a, b)| {
+            b.into_iter().fold(a, |acc, (op, next)| match op {
+                1 => Expr::Add(Box::new(acc), Box::new(next)),
+                _ => Expr::Sub(Box::new(acc), Box::new(next)),
+            })
+        });
+
+    let expr = math.clone()
         .then(
             just(Token::Eq).to(1).or(just(Token::Less).to(2))
-            .then(add)
+            .then(math)
             .or_not()
         )
         .map(|(a, b)| match b {

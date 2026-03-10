@@ -7,12 +7,25 @@ pub struct Environment { pub memory: HashMap<String, Symbol> }
 
 impl Environment {
     pub fn new() -> Self { Self { memory: HashMap::new() } }
-
+    
     fn eval(&self, expr: &Expr) -> Result<i32, String> {
         match expr {
             Expr::Int(n) => Ok(*n),
-            Expr::Identifier(s) => self.memory.get(s).map(|sym| sym.value).ok_or(format!("Variavel '{}' nao definida", s)),
+            Expr::Identifier(s) => self.memory.get(s).map(|sym| sym.value)
+                .ok_or(format!("Variavel '{}' nao definida", s)),
             Expr::Add(a, b) => Ok(self.eval(a)? + self.eval(b)?),
+            
+            Expr::Sub(a, b) => Ok(self.eval(a)? - self.eval(b)?),
+            Expr::Mul(a, b) => Ok(self.eval(a)? * self.eval(b)?),
+            Expr::Div(a, b) => {
+                let den = self.eval(b)?;
+                if den == 0 { 
+                    Err("A Morsa odeia divisao por zero!".into()) 
+                } else { 
+                    Ok(self.eval(a)? / den) 
+                }
+            }
+            
             Expr::Eq(a, b) => Ok(if self.eval(a)? == self.eval(b)? { 1 } else { 0 }),
             Expr::Less(a, b) => Ok(if self.eval(a)? < self.eval(b)? { 1 } else { 0 }),
         }
