@@ -1,5 +1,6 @@
 use crate::ast::{Expr, Stmt};
 use std::collections::HashMap;
+use std::io::{self, Write};
 
 pub enum Flow {
     None,
@@ -93,6 +94,29 @@ impl Environment {
                         break;
                     }
                 },
+
+                Stmt::Get { name } => {
+                    // Pede o número no terminal
+                    print!("🦭 Digite um numero para {}: ", name);
+                    io::stdout().flush().unwrap(); // Força o print a aparecer na hora
+
+                    // Lê a linha digitada
+                    let mut input = String::new();
+                    io::stdin().read_line(&mut input).unwrap();
+
+                    // Converte para i32 (se o usuário digitar besteira, vira 0)
+                    let v = input.trim().parse::<i32>().unwrap_or(0);
+
+                    // Salva na variável (se ela existir e for mutável)
+                    let sym = self
+                        .memory
+                        .get_mut(&name)
+                        .ok_or(format!("Variavel '{}' nao existe", name))?;
+                    if !sym.is_mutable {
+                        return Err(format!("'{}' e imutavel (CONST)", name));
+                    }
+                    sym.value = v;
+                }
             }
         }
         Ok(Flow::None)

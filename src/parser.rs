@@ -88,6 +88,11 @@ pub fn parser_da_morsa<'a>() -> impl Parser<'a, &'a [Token], Vec<Stmt>, Extra<'a
         let print = just(Token::Print)
             .ignore_then(expr.clone())
             .map(Stmt::Print);
+
+        let get = just(Token::Get)
+            .ignore_then(ident.clone())
+            .map(|name| Stmt::Get { name });
+
         let brk = just(Token::Break).to(Stmt::Break);
 
         let repeat = just(Token::Repeat)
@@ -110,7 +115,12 @@ pub fn parser_da_morsa<'a>() -> impl Parser<'a, &'a [Token], Vec<Stmt>, Extra<'a
                 else_body,
             });
 
-        decl.or(assign).or(print).or(repeat).or(if_stmt).or(brk)
+        decl.or(assign)
+            .or(print)
+            .or(get)
+            .or(repeat)
+            .or(if_stmt)
+            .or(brk)
     })
     .repeated()
     .collect::<Vec<Stmt>>()
