@@ -2,6 +2,7 @@
 pub enum Expr {
     Int(i32),
     Identifier(String),
+    ArrayAccess(String, Box<Expr>),
     Add(Box<Expr>, Box<Expr>),
     Sub(Box<Expr>, Box<Expr>),
     Mul(Box<Expr>, Box<Expr>),
@@ -20,6 +21,7 @@ pub enum Stmt {
     Assignment {
         name: String,
         value: Expr,
+        index: Option<Expr>,
     },
     Print(Expr),
     Repeat {
@@ -33,5 +35,10 @@ pub enum Stmt {
     Break,
     Get {
         name: String,
+        index: Option<Expr>,
+    },
+    ArrayDecl {
+        name: String,
+        size: Expr,
     },
 }

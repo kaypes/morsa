@@ -6,10 +6,12 @@ pub enum Flow {
     None,
     Break,
 }
+
 pub struct Symbol {
-    pub value: i32,
+    pub values: Vec<i32>,
     pub is_mutable: bool,
 }
+
 pub struct Environment {
     pub memory: HashMap<String, Symbol>,
 }
@@ -27,21 +29,30 @@ impl Environment {
             Expr::Identifier(s) => self
                 .memory
                 .get(s)
-                .map(|sym| sym.value)
+                .map(|sym| sym.values[0])
                 .ok_or(format!("Variavel '{}' nao definida", s)),
+            Expr::ArrayAccess(s, idx) => {
+                let i = self.eval(idx)? as usize;
+                let sym = self
+                    .memory
+                    .get(s)
+                    .ok_or(format!("Array '{}' nao existe", s))?;
+                sym.values
+                    .get(i)
+                    .copied()
+                    .ok_or(format!("Indice {} fora do limite do array '{}'", i, s))
+            }
             Expr::Add(a, b) => Ok(self.eval(a)? + self.eval(b)?),
-
             Expr::Sub(a, b) => Ok(self.eval(a)? - self.eval(b)?),
             Expr::Mul(a, b) => Ok(self.eval(a)? * self.eval(b)?),
             Expr::Div(a, b) => {
                 let den = self.eval(b)?;
                 if den == 0 {
-                    Err("A Morsa odeia divisao por zero!".into())
+                    Err("Divisao por zero!".into())
                 } else {
                     Ok(self.eval(a)? / den)
                 }
             }
-
             Expr::Eq(a, b) => Ok(if self.eval(a)? == self.eval(b)? { 1 } else { 0 }),
             Expr::Less(a, b) => Ok(if self.eval(a)? < self.eval(b)? { 1 } else { 0 }),
         }
@@ -51,6 +62,7 @@ impl Environment {
         for stmt in stmts {
             match stmt {
                 Stmt::Break => return Ok(Flow::Break),
+
                 Stmt::Declaration {
                     name,
                     is_mutable,
@@ -60,20 +72,48 @@ impl Environment {
                     self.memory.insert(
                         name,
                         Symbol {
-                            value: v,
+                            values: vec![v],
                             is_mutable,
                         },
                     );
                 }
-                Stmt::Assignment { name, value } => {
+
+                Stmt::ArrayDecl { name, size } => {
+                    let s = self.eval(&size)? as usize;
+                    self.memory.insert(
+                        name,
+                        Symbol {
+                            values: vec![0; s],
+                            is_mutable: true,
+                        },
+                    );
+                }
+
+                Stmt::Assignment { name, index, value } => {
                     let v = self.eval(&value)?;
+
+                    let idx_val = match index {
+                        Some(expr) => Some(self.eval(&expr)? as usize),
+                        None => None,
+                    };
+
                     let sym = self.memory.get_mut(&name).ok_or("Inexistente")?;
                     if !sym.is_mutable {
                         return Err("Imutavel".into());
                     }
-                    sym.value = v;
+
+                    if let Some(i) = idx_val {
+                        if i >= sym.values.len() {
+                            return Err("Indice fora do limite".into());
+                        }
+                        sym.values[i] = v;
+                    } else {
+                        sym.values[0] = v;
+                    }
                 }
+
                 Stmt::Print(e) => println!("{}", self.eval(&e)?),
+
                 Stmt::If {
                     condition,
                     then_body,
@@ -89,33 +129,42 @@ impl Environment {
                         }
                     }
                 }
+
                 Stmt::Repeat { body } => loop {
                     if let Flow::Break = self.execute(body.clone())? {
                         break;
                     }
                 },
 
-                Stmt::Get { name } => {
-                    // Pede o número no terminal
-                    print!("🦭 Digite um numero para {}: ", name);
-                    io::stdout().flush().unwrap(); // Força o print a aparecer na hora
+                Stmt::Get { name, index } => {
+                    print!("{}: ", name);
+                    io::stdout().flush().unwrap();
 
-                    // Lê a linha digitada
                     let mut input = String::new();
                     io::stdin().read_line(&mut input).unwrap();
-
-                    // Converte para i32 (se o usuário digitar besteira, vira 0)
                     let v = input.trim().parse::<i32>().unwrap_or(0);
 
-                    // Salva na variável (se ela existir e for mutável)
+                    let idx_val = match index {
+                        Some(expr) => Some(self.eval(&expr)? as usize),
+                        None => None,
+                    };
+
                     let sym = self
                         .memory
                         .get_mut(&name)
                         .ok_or(format!("Variavel '{}' nao existe", name))?;
                     if !sym.is_mutable {
-                        return Err(format!("'{}' e imutavel (CONST)", name));
+                        return Err("Imutavel (CONST)".into());
                     }
-                    sym.value = v;
+
+                    if let Some(i) = idx_val {
+                        if i >= sym.values.len() {
+                            return Err("Indice fora do limite".into());
+                        }
+                        sym.values[i] = v;
+                    } else {
+                        sym.values[0] = v;
+                    }
                 }
             }
         }

@@ -19,6 +19,8 @@ pub enum Token {
     #[token("-...- -...-")]             Eq,
     #[token(".-.. -")]                  Less,
     #[token("--. . -")]                 Get,
+    #[token("-.--.")]                   LBracket,
+    #[token("-.--.-")]                  RBracket,
 
     #[regex(r"[\.-]+", |lex| lex.slice().to_string())]
     Morse(String),
