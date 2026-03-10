@@ -44,12 +44,16 @@ pub fn parser_da_morsa<'a>() -> impl Parser<'a, &'a [Token], Vec<Stmt>, Extra<'a
         });
 
     recursive(|stmt| {
-        let decl = just(Token::Var).to(true).or(just(Token::Const).to(false))
-            .then(ident.clone())
+        let decl = just(Token::Const).or_not()
             .then_ignore(just(Token::IntType))
+            .then(ident.clone())
             .then_ignore(just(Token::Assign))
             .then(expr.clone())
-            .map(|((is_mutable, name), value)| Stmt::Declaration { name, is_mutable, value });
+            .map(|((is_const, name), value)| Stmt::Declaration { 
+                name, 
+                is_mutable: is_const.is_none(),
+                value 
+            });
 
         let assign = ident.clone()
             .then_ignore(just(Token::Assign))
